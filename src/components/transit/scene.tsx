@@ -1,10 +1,17 @@
 /**
  * Scroll-driven hero scene.
- * One SVG "city" whose layers are driven by a single scroll progress value:
- * City -> People -> Crowd -> Demand -> Data -> Hotspots -> Buses -> Network.
- * Deterministic geometry (no Math.random) so SSR and hydration match.
+ *
+ * Sequence:
+ * City → People → Demand → Data → Hotspots → Fleet → Network
+ *
+ * The geometry is deterministic so SSR and hydration remain stable.
  */
+
 import { useEffect, useRef, useState } from "react";
+
+/* -------------------------------------------------------------------------- */
+/* Deterministic geometry                                                     */
+/* -------------------------------------------------------------------------- */
 
 const rand = (seed: number) => {
   const x = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
@@ -25,9 +32,18 @@ const HOTSPOTS = [
 ];
 
 const BUSES = [
-  { from: { x: 90, y: 440 }, to: { x: 700, y: 350 } },
-  { from: { x: 930, y: 90 }, to: { x: 800, y: 320 } },
-  { from: { x: 480, y: 500 }, to: { x: 620, y: 150 } },
+  {
+    from: { x: 90, y: 440 },
+    to: { x: 700, y: 350 },
+  },
+  {
+    from: { x: 930, y: 90 },
+    to: { x: 800, y: 320 },
+  },
+  {
+    from: { x: 480, y: 500 },
+    to: { x: 620, y: 150 },
+  },
 ];
 
 const BLOCKS = Array.from({ length: 34 }, (_, i) => ({
@@ -37,18 +53,60 @@ const BLOCKS = Array.from({ length: 34 }, (_, i) => ({
   h: 30 + rand(i + 43) * 60,
 }));
 
-const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
-const seg = (p: number, a: number, b: number) => clamp01((p - a) / (b - a));
+/* -------------------------------------------------------------------------- */
+/* Progress helpers                                                           */
+/* -------------------------------------------------------------------------- */
+
+const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
+
+const seg = (progress: number, start: number, end: number) =>
+  clamp01((progress - start) / (end - start));
+
+/* -------------------------------------------------------------------------- */
+/* Hero stages                                                                */
+/* -------------------------------------------------------------------------- */
 
 export const STAGES = [
-  { id: "01", title: "The city", copy: "Millions of movements, every hour." },
-  { id: "02", title: "The people", copy: "Each one needs to be somewhere else." },
-  { id: "03", title: "The demand", copy: "They tell us where transport is needed." },
-  { id: "04", title: "The data", copy: "Individual requests become a signal." },
-  { id: "05", title: "The hotspots", copy: "Pressure points, before they crowd." },
-  { id: "06", title: "The fleet", copy: "Buses move toward demand." },
-  { id: "07", title: "The network", copy: "Capacity that reshapes itself." },
+  {
+    id: "01",
+    title: "The city",
+    copy: "Millions of movements, every hour.",
+  },
+  {
+    id: "02",
+    title: "The people",
+    copy: "Each one needs to be somewhere else.",
+  },
+  {
+    id: "03",
+    title: "The demand",
+    copy: "They tell us where transport is needed.",
+  },
+  {
+    id: "04",
+    title: "The data",
+    copy: "Individual requests become a signal.",
+  },
+  {
+    id: "05",
+    title: "The hotspots",
+    copy: "Pressure points, before they crowd.",
+  },
+  {
+    id: "06",
+    title: "The fleet",
+    copy: "Buses move toward demand.",
+  },
+  {
+    id: "07",
+    title: "The network",
+    copy: "Capacity that reshapes itself.",
+  },
 ];
+
+/* -------------------------------------------------------------------------- */
+/* Scroll progress                                                            */
+/* -------------------------------------------------------------------------- */
 
 export function useScrollProgress<T extends HTMLElement>() {
   const ref = useRef<T>(null);
@@ -56,51 +114,111 @@ export function useScrollProgress<T extends HTMLElement>() {
 
   useEffect(() => {
     let frame = 0;
+
     const update = () => {
       frame = 0;
-      const el = ref.current;
-      if (!el) return;
-      const rect = el.getBoundingClientRect();
-      const total = rect.height - window.innerHeight;
-      setProgress(total <= 0 ? 0 : clamp01(-rect.top / total));
+
+      const element = ref.current;
+
+      if (!element) {
+        return;
+      }
+
+      const rect = element.getBoundingClientRect();
+
+      /*
+       * The hero is intentionally much taller than the viewport.
+       * Progress is therefore calculated from:
+       *
+       * top of hero entering viewport
+       *        ↓
+       * bottom of hero reaching viewport bottom
+       */
+      const scrollableDistance = rect.height - window.innerHeight;
+
+      const nextProgress =
+        scrollableDistance <= 0
+          ? 0
+          : clamp01(-rect.top / scrollableDistance);
+
+      setProgress(nextProgress);
     };
-    const onScroll = () => {
-      if (!frame) frame = requestAnimationFrame(update);
+
+    const requestUpdate = () => {
+      if (frame === 0) {
+        frame = requestAnimationFrame(update);
+      }
     };
+
     update();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
+
+    window.addEventListener("scroll", requestUpdate, {
+      passive: true,
+    });
+
+    window.addEventListener("resize", requestUpdate);
+
     return () => {
-      if (frame) cancelAnimationFrame(frame);
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
+      if (frame !== 0) {
+        cancelAnimationFrame(frame);
+      }
+
+      window.removeEventListener("scroll", requestUpdate);
+      window.removeEventListener("resize", requestUpdate);
     };
   }, []);
 
-  return { ref, progress };
+  return {
+    ref,
+    progress,
+  };
 }
 
-export function NetworkScene({ progress }: { progress: number }) {
-  const city = seg(progress, 0, 0.12);
-  const people = seg(progress, 0.1, 0.28);
-  const demand = seg(progress, 0.26, 0.44);
-  const data = seg(progress, 0.4, 0.58);
-  const hotspot = seg(progress, 0.52, 0.72);
-  const fleet = seg(progress, 0.68, 0.88);
-  const network = seg(progress, 0.84, 1);
+/* -------------------------------------------------------------------------- */
+/* Network scene                                                              */
+/* -------------------------------------------------------------------------- */
+
+export function NetworkScene({
+  progress,
+}: {
+  progress: number;
+}) {
+  /*
+   * Each layer has its own section of the scroll timeline.
+   *
+   * The first city layer starts slightly before scroll begins so the
+   * hero is never visually empty at progress = 0.
+   */
+  const city = seg(progress, 0, 0.16);
+
+  const people = seg(progress, 0.08, 0.30);
+
+  const demand = seg(progress, 0.22, 0.46);
+
+  const data = seg(progress, 0.38, 0.60);
+
+  const hotspot = seg(progress, 0.52, 0.74);
+
+  const fleet = seg(progress, 0.66, 0.88);
+
+  const network = seg(progress, 0.82, 1);
 
   return (
     <svg
       viewBox="0 0 1000 560"
-      className="h-full w-full"
+      className="block h-full w-full"
+      preserveAspectRatio="xMidYMid meet"
       role="img"
       aria-label="Demand across a city resolving into dynamically allocated buses"
     >
-      {/* street grid */}
-      <g opacity={0.35 + city * 0.35}>
+      {/* ------------------------------------------------------------------ */}
+      {/* Street grid                                                        */}
+      {/* ------------------------------------------------------------------ */}
+
+      <g opacity={0.42 + city * 0.30}>
         {Array.from({ length: 11 }, (_, i) => (
           <line
-            key={`v${i}`}
+            key={`vertical-${i}`}
             x1={i * 100}
             y1={0}
             x2={i * 100}
@@ -109,9 +227,10 @@ export function NetworkScene({ progress }: { progress: number }) {
             strokeWidth={1}
           />
         ))}
+
         {Array.from({ length: 7 }, (_, i) => (
           <line
-            key={`h${i}`}
+            key={`horizontal-${i}`}
             x1={0}
             y1={i * 93}
             x2={1000}
@@ -122,123 +241,270 @@ export function NetworkScene({ progress }: { progress: number }) {
         ))}
       </g>
 
-      {/* city blocks */}
+      {/* ------------------------------------------------------------------ */}
+      {/* City blocks                                                        */}
+      {/* ------------------------------------------------------------------ */}
+
       <g>
-        {BLOCKS.map((b, i) => {
-          const local = clamp01(city * 1.6 - (i / BLOCKS.length) * 0.6);
+        {BLOCKS.map((block, index) => {
+          /*
+           * Important:
+           * The old implementation had opacity = 0 for every block when
+           * progress was 0. That made the hero look completely empty.
+           *
+           * A small base value keeps the city visible immediately.
+           */
+          const local = clamp01(
+            0.35 +
+              city * 1.15 -
+              (index / BLOCKS.length) * 0.45,
+          );
+
+          const yOffset = (1 - local) * 14;
+
           return (
             <rect
-              key={i}
-              x={b.x}
-              y={b.y + (1 - local) * 14}
-              width={b.w}
-              height={b.h}
+              key={`block-${index}`}
+              x={block.x}
+              y={block.y + yOffset}
+              width={block.w}
+              height={block.h}
               rx={2}
               fill="var(--color-surface-raised)"
-              opacity={local * 0.85}
+              opacity={local * 0.9}
             />
           );
         })}
       </g>
 
-      {/* people */}
+      {/* ------------------------------------------------------------------ */}
+      {/* People                                                             */}
+      {/* ------------------------------------------------------------------ */}
+
       <g>
-        {PEOPLE.map((p, i) => {
-          const local = clamp01(people * 1.5 - p.d * 0.5);
-          const target = HOTSPOTS[i % HOTSPOTS.length];
-          const x = p.x + (target.x - p.x) * demand * 0.75;
-          const y = p.y + (target.y - p.y) * demand * 0.75;
+        {PEOPLE.map((person, index) => {
+          /*
+           * A small initial visibility value means the city already contains
+           * people before the demand sequence begins.
+           */
+          const local = clamp01(
+            0.18 +
+              people * 1.35 -
+              person.d * 0.45,
+          );
+
+          const target = HOTSPOTS[index % HOTSPOTS.length];
+
+          /*
+           * People gradually move toward demand zones.
+           */
+          const x =
+            person.x +
+            (target.x - person.x) *
+              demand *
+              0.75;
+
+          const y =
+            person.y +
+            (target.y - person.y) *
+              demand *
+              0.75;
+
           return (
             <circle
-              key={i}
+              key={`person-${index}`}
               cx={x}
               cy={y}
               r={1.6 + local * 1.4}
-              fill={demand > 0.4 ? "var(--color-signal)" : "var(--color-accent)"}
-              opacity={local * (1 - network * 0.55)}
+              fill={
+                demand > 0.4
+                  ? "var(--color-signal)"
+                  : "var(--color-accent)"
+              }
+              opacity={
+                local *
+                (1 - network * 0.55)
+              }
             />
           );
         })}
       </g>
 
-      {/* data links between zones */}
+      {/* ------------------------------------------------------------------ */}
+      {/* Demand points                                                      */}
+      {/* ------------------------------------------------------------------ */}
+
+      <g opacity={demand}>
+        {HOTSPOTS.map((hotspotPoint) => (
+          <circle
+            key={`demand-${hotspotPoint.label}`}
+            cx={hotspotPoint.x}
+            cy={hotspotPoint.y}
+            r={4}
+            fill="var(--color-signal)"
+            opacity={0.9}
+          />
+        ))}
+      </g>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* Data links                                                         */}
+      {/* ------------------------------------------------------------------ */}
+
       <g opacity={data}>
-        {HOTSPOTS.map((h, i) => {
-          const n = HOTSPOTS[(i + 1) % HOTSPOTS.length];
+        {HOTSPOTS.map((hotspotPoint, index) => {
+          const next =
+            HOTSPOTS[
+              (index + 1) %
+                HOTSPOTS.length
+            ];
+
           return (
             <line
-              key={i}
-              x1={h.x}
-              y1={h.y}
-              x2={n.x}
-              y2={n.y}
+              key={`data-link-${index}`}
+              x1={hotspotPoint.x}
+              y1={hotspotPoint.y}
+              x2={next.x}
+              y2={next.y}
               stroke="var(--color-accent)"
               strokeWidth={1}
               strokeDasharray="4 8"
-              opacity={0.5}
-              style={{ animation: "flow-dash 6s linear infinite" }}
+              opacity={0.6}
+              style={{
+                animation:
+                  "flow-dash 6s linear infinite",
+              }}
             />
           );
         })}
       </g>
 
-      {/* hotspots */}
+      {/* ------------------------------------------------------------------ */}
+      {/* Hotspots                                                           */}
+      {/* ------------------------------------------------------------------ */}
+
       <g>
-        {HOTSPOTS.map((h, i) => {
-          const local = clamp01(hotspot * 1.4 - i * 0.12);
-          const r = h.r * local;
+        {HOTSPOTS.map((hotspotPoint, index) => {
+          const local = clamp01(
+            hotspot * 1.4 -
+              index * 0.12,
+          );
+
+          const radius =
+            hotspotPoint.r * local;
+
           return (
-            <g key={h.label} opacity={local}>
-              <circle cx={h.x} cy={h.y} r={r} fill="var(--color-demand)" opacity={0.14} />
+            <g
+              key={`hotspot-${hotspotPoint.label}`}
+              opacity={local}
+            >
+              {/* outer demand field */}
               <circle
-                cx={h.x}
-                cy={h.y}
-                r={r * 0.55}
+                cx={hotspotPoint.x}
+                cy={hotspotPoint.y}
+                r={radius}
+                fill="var(--color-demand)"
+                opacity={0.14}
+              />
+
+              {/* inner demand field */}
+              <circle
+                cx={hotspotPoint.x}
+                cy={hotspotPoint.y}
+                r={radius * 0.55}
                 fill="var(--color-demand)"
                 opacity={0.22}
               />
-              <circle cx={h.x} cy={h.y} r={3.5} fill="var(--color-demand)" />
+
+              {/* center */}
+              <circle
+                cx={hotspotPoint.x}
+                cy={hotspotPoint.y}
+                r={3.5}
+                fill="var(--color-demand)"
+              />
+
+              {/* zone label */}
               <text
-                x={h.x + r * 0.6 + 8}
-                y={h.y - 4}
+                x={
+                  hotspotPoint.x +
+                  radius * 0.6 +
+                  8
+                }
+                y={hotspotPoint.y - 4}
                 className="font-mono"
                 fontSize={11}
                 fill="var(--color-muted-foreground)"
                 letterSpacing={1.4}
               >
-                {h.label}
+                {hotspotPoint.label}
               </text>
+
+              {/* request count */}
               <text
-                x={h.x + r * 0.6 + 8}
-                y={h.y + 12}
+                x={
+                  hotspotPoint.x +
+                  radius * 0.6 +
+                  8
+                }
+                y={hotspotPoint.y + 12}
                 className="font-mono"
                 fontSize={13}
                 fill="var(--color-foreground)"
               >
-                {Math.round(h.count * local)} req
+                {Math.round(
+                  hotspotPoint.count *
+                    local,
+                )}{" "}
+                req
               </text>
             </g>
           );
         })}
       </g>
 
-      {/* fleet */}
+      {/* ------------------------------------------------------------------ */}
+      {/* Fleet                                                              */}
+      {/* ------------------------------------------------------------------ */}
+
       <g>
-        {BUSES.map((b, i) => {
-          const local = clamp01(fleet * 1.3 - i * 0.14);
-          const x = b.from.x + (b.to.x - b.from.x) * local;
-          const y = b.from.y + (b.to.y - b.from.y) * local;
+        {BUSES.map((bus, index) => {
+          const local = clamp01(
+            fleet * 1.3 -
+              index * 0.14,
+          );
+
+          const x =
+            bus.from.x +
+            (bus.to.x - bus.from.x) *
+              local;
+
+          const y =
+            bus.from.y +
+            (bus.to.y - bus.from.y) *
+              local;
+
+          const visibility = clamp01(
+            fleet * 2,
+          );
+
           return (
-            <g key={i} opacity={clamp01(fleet * 2)}>
+            <g
+              key={`bus-${index}`}
+              opacity={visibility}
+            >
+              {/* route trail */}
               <line
-                x1={b.from.x}
-                y1={b.from.y}
+                x1={bus.from.x}
+                y1={bus.from.y}
                 x2={x}
                 y2={y}
                 stroke="var(--color-signal)"
                 strokeWidth={1.5}
                 opacity={0.5}
               />
+
+              {/* bus */}
               <rect
                 x={x - 9}
                 y={y - 5}
@@ -247,27 +513,60 @@ export function NetworkScene({ progress }: { progress: number }) {
                 rx={2}
                 fill="var(--color-signal)"
               />
+
+              {/* bus window */}
+              <rect
+                x={x - 4}
+                y={y - 3}
+                width={5}
+                height={3}
+                rx={0.5}
+                fill="var(--color-signal-foreground)"
+                opacity={0.65}
+              />
             </g>
           );
         })}
       </g>
 
-      {/* optimized network */}
+      {/* ------------------------------------------------------------------ */}
+      {/* Optimized network                                                  */}
+      {/* ------------------------------------------------------------------ */}
+
       <g opacity={network}>
-        {HOTSPOTS.map((h, i) =>
-          HOTSPOTS.slice(i + 1).map((n) => (
-            <line
-              key={`${h.label}-${n.label}`}
-              x1={h.x}
-              y1={h.y}
-              x2={n.x}
-              y2={n.y}
-              stroke="var(--color-signal)"
-              strokeWidth={1}
-              opacity={0.3}
-            />
-          )),
+        {HOTSPOTS.map(
+          (hotspotPoint, index) =>
+            HOTSPOTS
+              .slice(index + 1)
+              .map((next) => (
+                <line
+                  key={`network-${hotspotPoint.label}-${next.label}`}
+                  x1={hotspotPoint.x}
+                  y1={hotspotPoint.y}
+                  x2={next.x}
+                  y2={next.y}
+                  stroke="var(--color-signal)"
+                  strokeWidth={1}
+                  opacity={0.35}
+                />
+              )),
         )}
+      </g>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* Final network nodes                                                */}
+      {/* ------------------------------------------------------------------ */}
+
+      <g opacity={network}>
+        {HOTSPOTS.map((hotspotPoint) => (
+          <circle
+            key={`network-node-${hotspotPoint.label}`}
+            cx={hotspotPoint.x}
+            cy={hotspotPoint.y}
+            r={4}
+            fill="var(--color-signal)"
+          />
+        ))}
       </g>
     </svg>
   );
