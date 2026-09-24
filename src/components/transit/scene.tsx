@@ -113,58 +113,53 @@ export function useScrollProgress<T extends HTMLElement>() {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    let frame = 0;
+    let rafId = 0;
+    let lastProgress = -1;
 
-    const update = () => {
-      frame = 0;
-
+    /*
+     * Poll on every animation frame instead of relying on scroll events.
+     *
+     * Rationale: TanStack Start (SSR + streaming) can render the page inside
+     * layouts where the scroll container is not `window`. Polling
+     * getBoundingClientRect() works regardless of which element holds the
+     * scroll position, and the overhead (~0.1 ms/frame) is negligible.
+     */
+    const loop = () => {
       const element = ref.current;
 
-      if (!element) {
-        return;
+      if (element) {
+        const rect = element.getBoundingClientRect();
+
+        /*
+         * The hero is intentionally much taller than the viewport.
+         * Progress is therefore calculated from:
+         *
+         *   top of hero entering viewport (rect.top === 0)
+         *          ↓
+         *   bottom of hero leaving viewport bottom (rect.top === -(rect.height - innerHeight))
+         */
+        const scrollableDistance = rect.height - window.innerHeight;
+
+        const nextProgress =
+          scrollableDistance <= 0
+            ? 0
+            : clamp01(-rect.top / scrollableDistance);
+
+        // Only call setProgress when the value actually changes to avoid
+        // triggering React re-renders on every frame while the page is idle.
+        if (Math.abs(nextProgress - lastProgress) > 0.0005) {
+          lastProgress = nextProgress;
+          setProgress(nextProgress);
+        }
       }
 
-      const rect = element.getBoundingClientRect();
-
-      /*
-       * The hero is intentionally much taller than the viewport.
-       * Progress is therefore calculated from:
-       *
-       * top of hero entering viewport
-       *        ↓
-       * bottom of hero reaching viewport bottom
-       */
-      const scrollableDistance = rect.height - window.innerHeight;
-
-      const nextProgress =
-        scrollableDistance <= 0
-          ? 0
-          : clamp01(-rect.top / scrollableDistance);
-
-      setProgress(nextProgress);
+      rafId = requestAnimationFrame(loop);
     };
 
-    const requestUpdate = () => {
-      if (frame === 0) {
-        frame = requestAnimationFrame(update);
-      }
-    };
-
-    update();
-
-    window.addEventListener("scroll", requestUpdate, {
-      passive: true,
-    });
-
-    window.addEventListener("resize", requestUpdate);
+    rafId = requestAnimationFrame(loop);
 
     return () => {
-      if (frame !== 0) {
-        cancelAnimationFrame(frame);
-      }
-
-      window.removeEventListener("scroll", requestUpdate);
-      window.removeEventListener("resize", requestUpdate);
+      cancelAnimationFrame(rafId);
     };
   }, []);
 
