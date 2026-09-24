@@ -1,0 +1,15 @@
+{
+  "schemaId": 3,
+  "chats": [
+    {
+      "chatId": "755c0c01-5c07-4e28-be41-04e3860e4358",
+      "title": "The scroll-driven hero animation is now working co",
+      "titleSource": "firstUserMessage",
+      "turnIds": [
+        "request_0d0d8aa0-0983-46b6-912e-e0774696ce9e"
+      ],
+      "firstSeen": "2026-09-25 04:26:50.182",
+      "lastSeen": "2026-09-25 04:31:06.234"
+    }
+  ]
+}
