@@ -44,7 +44,11 @@ function Landing() {
 
       {/* ---------- Cinematic hero: scroll-driven sequence ---------- */}
       <div ref={ref} className="relative h-[420vh]">
-        <div className="sticky top-0 flex h-screen flex-col overflow-hidden pt-14">
+  <div className="fixed right-4 top-20 z-[9999] rounded bg-black px-3 py-2 font-mono text-xs text-white">
+    progress: {progress.toFixed(3)}
+  </div>
+
+  <div className="sticky top-0 flex h-screen flex-col overflow-hidden pt-14">
           <div className="absolute inset-0 grid-field opacity-40" />
 
           <div className="relative mx-auto flex w-full max-w-7xl flex-1 flex-col px-5">
