@@ -44,12 +44,13 @@ function isH3SwallowedErrorBody(body: string): boolean {
   }
 }
 
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
-const COOKIE_SECRET = process.env.COOKIE_SECRET || 'fallback-secret';
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+const COOKIE_SECRET = process.env.COOKIE_SECRET;
 const SESSION_COOKIE = 'transit-admin-session';
 
 async function createSessionToken(): Promise<string> {
+  if (!COOKIE_SECRET) throw new Error('COOKIE_SECRET is not configured')
   const payload = JSON.stringify({ role: 'admin', exp: Date.now() + 30 * 60 * 1000 })
   const encoder = new TextEncoder()
   const key = await crypto.subtle.importKey(
@@ -62,6 +63,7 @@ async function createSessionToken(): Promise<string> {
 
 async function verifySessionToken(token: string): Promise<boolean> {
   try {
+    if (!COOKIE_SECRET) return false
     const [payloadB64, sigB64] = token.split('.')
     if (!payloadB64 || !sigB64) return false
     const payload = atob(payloadB64)
@@ -83,8 +85,8 @@ export default {
       
       if (request.method === 'POST' && url.pathname === '/api/admin-login') {
         const { username, password } = await request.json();
-        const validUser = username === ADMIN_USERNAME;
-        const validPass = password === ADMIN_PASSWORD;
+        const validUser = Boolean(ADMIN_USERNAME) && username === ADMIN_USERNAME;
+        const validPass = Boolean(ADMIN_PASSWORD) && password === ADMIN_PASSWORD;
         if (validUser && validPass) {
           const token = await createSessionToken();
           return new Response(JSON.stringify({ success: true }), {

@@ -30,9 +30,13 @@ function AdminPage() {
         setAuthed(true)
         fetchData()
       } else {
-        navigate({ to: '/admin/login' })
+        setAuthed(false)
+        window.location.assign('/admin/login')
       }
-    }).catch(() => navigate({ to: '/admin/login' }))
+    }).catch(() => {
+      setAuthed(false)
+      window.location.assign('/admin/login')
+    })
   }, [])
 
   const fetchData = async () => {

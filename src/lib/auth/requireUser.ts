@@ -5,8 +5,8 @@ import { supabase } from '@/lib/supabase'
 import { redirect } from '@tanstack/react-router'
 
 export interface RequestDraft {
-  from: string
-  to: string
+  from: { id: string; name: string; lat: number; lng: number } | null
+  to: { id: string; name: string; lat: number; lng: number } | null
   people: number
   when: string
 }

@@ -6,6 +6,8 @@ import { saveDraft, loadDraft } from '@/lib/auth/requireUser'
 import { StopSearch } from '@/components/Request/StopSearch'
 import { NearbyStopsSuggestion } from '@/components/Request/NearbyStopsSuggestion'
 
+type SelectedStop = { id: string; name: string; lat: number; lng: number }
+
 export const Route = createFileRoute('/request')({
   head: () => ({
     meta: [
@@ -33,8 +35,8 @@ function RequestPage() {
   const [authLoading, setAuthLoading] = useState(true)
 
   const [step, setStep] = useState(0)
-  const [fromStop, setFromStop] = useState<{ id: string; name: string } | null>(null)
-  const [toStop, setToStop] = useState<{ id: string; name: string } | null>(null)
+  const [fromStop, setFromStop] = useState<SelectedStop | null>(null)
+  const [toStop, setToStop] = useState<SelectedStop | null>(null)
   const [people, setPeople] = useState(1)
   const [when, setWhen] = useState('Now')
 
@@ -53,8 +55,8 @@ function RequestPage() {
       // Restore any form state that was saved before redirecting to login
       const draft = loadDraft()
       if (draft) {
-        if (draft.from) setFromStop({ id: '', name: draft.from })
-        if (draft.to) setToStop({ id: '', name: draft.to })
+        if (draft.from) setFromStop(draft.from)
+        if (draft.to) setToStop(draft.to)
         if (draft.people) setPeople(draft.people)
         if (draft.when) setWhen(draft.when)
       }
@@ -78,8 +80,8 @@ function RequestPage() {
     if (!user) {
       // Save draft before redirecting to login
       saveDraft({
-        from: fromStop?.name || '',
-        to: toStop?.name || '',
+        from: fromStop,
+        to: toStop,
         people,
         when,
       })
@@ -88,14 +90,18 @@ function RequestPage() {
     }
 
     setSubmitError(null)
+    if (!fromStop || !toStop) {
+      setSubmitError('Select both an origin and destination stop.')
+      return
+    }
     try {
       // Server-side rate-limit enforced inside the Postgres RPC
       const { data, error } = await supabase.rpc('submit_drt_request', {
         p_user_id: user.id,
-        p_origin_lat: 37.7749,
-        p_origin_lng: -122.4194,
-        p_dest_lat: 37.774,
-        p_dest_lng: -122.41,
+        p_origin_lat: fromStop.lat,
+        p_origin_lng: fromStop.lng,
+        p_dest_lat: toStop.lat,
+        p_dest_lng: toStop.lng,
         p_party_size: people,
         p_zone_id: 'C',
         p_origin_query: fromStop?.name || '',

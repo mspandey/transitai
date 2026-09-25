@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { requireMunicipalRole } from '@/lib/municipal/requireMunicipalRole'
 import { Logo } from '@/components/transit/chrome'
-import { GoogleMap } from '@/components/Map/GoogleMap'
+import { LeafletMap } from '@/components/Map/LeafletMap'
 
 export const Route = createFileRoute('/municipal')({
   beforeLoad: async () => {
@@ -151,13 +151,13 @@ function MunicipalPage() {
       <div className="grid flex-1 gap-4 p-4 xl:grid-cols-[1fr_380px]">
         {/* Main column */}
         <div className="flex flex-col gap-4">
-          {/* Google Map with live buses */}
+          {/* Leaflet/OpenStreetMap map with live buses */}
           <div className="panel overflow-hidden" style={{ height: '380px' }}>
             <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
               <span className="label-mono">Live network map</span>
               <span className="label-mono text-ok">● Supabase Realtime</span>
             </div>
-            <GoogleMap
+            <LeafletMap
               buses={processedFleet.map(b => ({
                 id: b.id,
                 lat: b.current_lat,
