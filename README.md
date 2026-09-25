@@ -57,7 +57,6 @@ Citizens signal real demand. The platform clusters it into hotspots, predicts wh
 
 ## See It In Action
 
-> 📹 Add real recordings here before sharing this README publicly — see [`docs/media/`](docs/media/). A tool like [ScreenToGif](https://www.screentogif.com/) (Windows) or [Kap](https://getkap.co/) (Mac) works well for quick, clean captures. Suggested clips:
 
 | | |
 |---|---|
@@ -172,8 +171,8 @@ Create a `.env.local` with:
 NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key   # server-only, never exposed to the client
-ADMIN_USERNAME=...
-ADMIN_PASSWORD_HASH=...
+ADMIN_USERNAME= admin
+ADMIN_PASSWORD_HASH= admin123
 ```
 
 Run the dev server:
