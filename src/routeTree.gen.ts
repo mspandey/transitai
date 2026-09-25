@@ -17,6 +17,7 @@ import { Route as RequestRouteImport } from './routes/request'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
+import { Route as MunicipalLoginRouteImport } from './routes/municipal.login'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -58,36 +59,44 @@ const AdminLoginRoute = AdminLoginRouteImport.update({
   path: '/admin/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MunicipalLoginRoute = MunicipalLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => MunicipalRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/municipal': typeof MunicipalRoute
+  '/municipal': typeof MunicipalRouteWithChildren
   '/network': typeof NetworkRoute
   '/request': typeof RequestRoute
   '/signup': typeof SignupRoute
   '/admin/login': typeof AdminLoginRoute
+  '/municipal/login': typeof MunicipalLoginRoute
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/municipal': typeof MunicipalRoute
+  '/municipal': typeof MunicipalRouteWithChildren
   '/network': typeof NetworkRoute
   '/request': typeof RequestRoute
   '/signup': typeof SignupRoute
   '/admin/login': typeof AdminLoginRoute
+  '/municipal/login': typeof MunicipalLoginRoute
   '/admin': typeof AdminIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/municipal': typeof MunicipalRoute
+  '/municipal': typeof MunicipalRouteWithChildren
   '/network': typeof NetworkRoute
   '/request': typeof RequestRoute
   '/signup': typeof SignupRoute
   '/admin/login': typeof AdminLoginRoute
+  '/municipal/login': typeof MunicipalLoginRoute
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
@@ -100,6 +109,7 @@ export interface FileRouteTypes {
     | '/request'
     | '/signup'
     | '/admin/login'
+    | '/municipal/login'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -110,6 +120,7 @@ export interface FileRouteTypes {
     | '/request'
     | '/signup'
     | '/admin/login'
+    | '/municipal/login'
     | '/admin'
   id:
     | '__root__'
@@ -120,13 +131,14 @@ export interface FileRouteTypes {
     | '/request'
     | '/signup'
     | '/admin/login'
+    | '/municipal/login'
     | '/admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
-  MunicipalRoute: typeof MunicipalRoute
+  MunicipalRoute: typeof MunicipalRouteWithChildren
   NetworkRoute: typeof NetworkRoute
   RequestRoute: typeof RequestRoute
   SignupRoute: typeof SignupRoute
@@ -192,13 +204,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/municipal/login': {
+      id: '/municipal/login'
+      path: '/login'
+      fullPath: '/municipal/login'
+      preLoaderRoute: typeof MunicipalLoginRouteImport
+      parentRoute: typeof MunicipalRoute
+    }
   }
 }
+
+interface MunicipalRouteChildren {
+  MunicipalLoginRoute: typeof MunicipalLoginRoute
+}
+
+const MunicipalRouteChildren: MunicipalRouteChildren = {
+  MunicipalLoginRoute: MunicipalLoginRoute,
+}
+
+const MunicipalRouteWithChildren = MunicipalRoute._addFileChildren(
+  MunicipalRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
-  MunicipalRoute: MunicipalRoute,
+  MunicipalRoute: MunicipalRouteWithChildren,
   NetworkRoute: NetworkRoute,
   RequestRoute: RequestRoute,
   SignupRoute: SignupRoute,

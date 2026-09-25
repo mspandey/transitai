@@ -1,0 +1,50 @@
+CREATE OR REPLACE FUNCTION public.submit_drt_request(
+  p_user_id uuid,
+  p_origin_lat float8,
+  p_origin_lng float8,
+  p_dest_lat float8,
+  p_dest_lng float8,
+  p_party_size int,
+  p_zone_id text,
+  p_origin_query text,
+  p_dest_query text
+) RETURNS json
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  recent_count int;
+  new_req_id uuid;
+BEGIN
+  IF auth.uid() IS NULL OR auth.uid() <> p_user_id THEN
+    RAISE EXCEPTION 'You must be signed in to submit a request';
+  END IF;
+  IF p_party_size < 1 THEN
+    RAISE EXCEPTION 'Party size must be at least 1 person';
+  END IF;
+  IF p_party_size > 10 THEN
+    RAISE EXCEPTION 'Maximum party size is 10 people.';
+  END IF;
+  IF p_origin_lat NOT BETWEEN -90 AND 90 OR p_dest_lat NOT BETWEEN -90 AND 90
+     OR p_origin_lng NOT BETWEEN -180 AND 180 OR p_dest_lng NOT BETWEEN -180 AND 180 THEN
+    RAISE EXCEPTION 'Invalid stop coordinates';
+  END IF;
+
+  SELECT count(*) INTO recent_count
+  FROM public.requests
+  WHERE user_id = p_user_id AND created_at > now() - interval '15 minutes';
+  IF recent_count >= 5 THEN
+    RAISE EXCEPTION 'You have reached the request limit. Try again later.';
+  END IF;
+
+  INSERT INTO public.requests (user_id, origin_lat, origin_lng, dest_lat, dest_lng, party_size, zone_id, status)
+  VALUES (p_user_id, p_origin_lat, p_origin_lng, p_dest_lat, p_dest_lng, p_party_size, p_zone_id, 'pending')
+  RETURNING id INTO new_req_id;
+
+  RETURN json_build_object('success', true, 'request_id', new_req_id);
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.submit_drt_request(uuid, float8, float8, float8, float8, int, text, text, text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.submit_drt_request(uuid, float8, float8, float8, float8, int, text, text, text) TO authenticated;

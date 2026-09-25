@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Logo } from '@/components/transit/chrome'
+import { Eye, EyeOff } from 'lucide-react'
 
 export const Route = createFileRoute('/signup')({
   head: () => ({
@@ -17,23 +18,47 @@ function SignupPage() {
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [displayName, setDisplayName] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+
+  const passwordRequirements = [
+    [password.length >= 8, 'at least 8 characters'],
+    [/[A-Z]/.test(password), 'one uppercase letter'],
+    [/[a-z]/.test(password), 'one lowercase letter'],
+    [/[0-9]/.test(password), 'one number'],
+    [/[^A-Za-z0-9]/.test(password), 'one special character'],
+  ] as const
+  const passwordValid = passwordRequirements.every(([valid]) => valid)
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError(null)
 
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { display_name: displayName },
-      },
+    if (!passwordValid) {
+      setError(`Password must contain ${passwordRequirements.filter(([valid]) => !valid).map(([, text]) => text).join(', ')}.`)
+      setLoading(false)
+      return
+    }
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.')
+      setLoading(false)
+      return
+    }
+
+    const response = await fetch('/api/citizen-signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, displayName }),
     })
+    const result = await response.json() as { user?: { id: string } | null; error?: string }
+    const data = { user: result.user }
+    const signUpError = response.ok ? null : new Error(result.error || 'Unable to create account.')
 
     if (signUpError) {
       // HACKATHON NOTE: Supabase returns a generic error for duplicate emails.
@@ -109,15 +134,22 @@ function SignupPage() {
           </div>
           <div>
             <label className="label-mono block mb-2">Password</label>
-            <input
-              type="password"
-              required
-              minLength={8}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Min 8 characters"
-              className="w-full border-b border-border bg-transparent pb-3 text-base outline-none placeholder:text-muted-foreground focus:border-signal"
-            />
+            <div className="flex items-center border-b border-border focus-within:border-signal">
+              <input type={showPassword ? 'text' : 'password'} required value={password} onChange={(e) => setPassword(e.target.value)} onBlur={() => setError(passwordValid ? null : 'Password must contain at least 8 characters, one uppercase letter, one lowercase letter, one number, and one special character.')} placeholder="Min 8 characters" className="w-full bg-transparent pb-3 text-base outline-none placeholder:text-muted-foreground" />
+              <button type="button" aria-label={showPassword ? 'Hide password' : 'Show password'} onClick={() => setShowPassword((visible) => !visible)} className="pb-3 text-muted-foreground hover:text-foreground">
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">Use 8+ characters with uppercase, lowercase, number, and special character.</p>
+          </div>
+          <div>
+            <label className="label-mono block mb-2">Confirm password</label>
+            <div className="flex items-center border-b border-border focus-within:border-signal">
+              <input type={showConfirmPassword ? 'text' : 'password'} required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} onBlur={() => setError(confirmPassword && password !== confirmPassword ? 'Passwords do not match.' : null)} placeholder="Repeat your password" className="w-full bg-transparent pb-3 text-base outline-none placeholder:text-muted-foreground" />
+              <button type="button" aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'} onClick={() => setShowConfirmPassword((visible) => !visible)} className="pb-3 text-muted-foreground hover:text-foreground">
+                {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
           </div>
 
           {error && (

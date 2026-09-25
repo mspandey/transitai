@@ -82,6 +82,37 @@ export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
       const url = new URL(request.url);
+
+      if (request.method === 'POST' && url.pathname === '/api/citizen-signup') {
+        const { email, password, displayName } = await request.json() as { email?: string; password?: string; displayName?: string };
+        const passwordValid = typeof password === 'string'
+          && password.length >= 8
+          && /[A-Z]/.test(password)
+          && /[a-z]/.test(password)
+          && /[0-9]/.test(password)
+          && /[^A-Za-z0-9]/.test(password);
+        if (!email || !passwordValid) {
+          return new Response(JSON.stringify({ error: 'Password must contain at least 8 characters, one uppercase letter, one lowercase letter, one number, and one special character.' }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
+        const supabaseUrl = process.env.VITE_SUPABASE_URL;
+        const anonKey = process.env.VITE_SUPABASE_ANON_KEY;
+        if (!supabaseUrl || !anonKey) {
+          return new Response(JSON.stringify({ error: 'Authentication service is not configured' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+        }
+        const authResponse = await fetch(`${supabaseUrl}/auth/v1/signup`, {
+          method: 'POST',
+          headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, data: { display_name: displayName || '' } }),
+        });
+        const payload = await authResponse.json();
+        return new Response(JSON.stringify(authResponse.ok ? { user: payload.user ?? null } : { error: payload.msg || payload.message || 'Unable to create account.' }), {
+          status: authResponse.status,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
       
       if (request.method === 'POST' && url.pathname === '/api/admin-login') {
         const { username, password } = await request.json();
@@ -118,6 +149,51 @@ export default {
             'Content-Type': 'application/json',
             'Set-Cookie': `${SESSION_COOKIE}=; Path=/; HttpOnly; Max-Age=0`,
           },
+        });
+      }
+
+      if (request.method === 'POST' && url.pathname === '/api/admin-resolve-alert') {
+        const cookies = request.headers.get('cookie') || '';
+        const match = cookies.match(new RegExp(`${SESSION_COOKIE}=([^;]+)`));
+        if (!match?.[1] || !(await verifySessionToken(match[1]))) {
+          return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+            status: 401,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
+
+        const { id } = await request.json() as { id?: string };
+        if (!id) {
+          return new Response(JSON.stringify({ error: 'Alert id is required' }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
+
+        const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        const supabaseUrl = process.env.VITE_SUPABASE_URL;
+        if (!serviceKey || !supabaseUrl) {
+          return new Response(JSON.stringify({ error: 'Admin data service is not configured' }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
+
+        const { createClient } = await import('@supabase/supabase-js');
+        const adminClient = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+        const { error } = await adminClient
+          .from('alerts')
+          .update({ resolved_at: new Date().toISOString() })
+          .eq('id', id);
+        if (error) {
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
+        return new Response(JSON.stringify({ success: true }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
         });
       }
 

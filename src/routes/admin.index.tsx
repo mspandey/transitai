@@ -20,6 +20,8 @@ function AdminPage() {
   const [alerts, setAlerts] = useState<any[]>([])
   const [auditLog, setAuditLog] = useState<any[]>([])
   const [authAttempts, setAuthAttempts] = useState<any[]>([])
+  const [resolvingAlert, setResolvingAlert] = useState<string | null>(null)
+  const [alertError, setAlertError] = useState<string | null>(null)
 
   const [tab, setTab] = useState<'fleet' | 'zones' | 'alerts' | 'audit' | 'security'>('fleet')
 
@@ -55,9 +57,23 @@ function AdminPage() {
   }
 
   const resolveAlert = async (id: string) => {
-    await logAdminAction('resolve_alert', 'alerts', id)
-    await supabase.from('alerts').update({ resolved_at: new Date().toISOString() }).eq('id', id)
-    fetchData()
+    setResolvingAlert(id)
+    setAlertError(null)
+    try {
+      const response = await fetch('/api/admin-resolve-alert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ id }),
+      })
+      if (!response.ok) throw new Error((await response.json()).error || 'Unable to resolve alert.')
+      await logAdminAction('resolve_alert', 'alerts', id)
+      await fetchData()
+    } catch (error) {
+      setAlertError(error instanceof Error ? error.message : 'Unable to resolve alert.')
+    } finally {
+      setResolvingAlert(null)
+    }
   }
 
   const resetBusStatus = async (busId: string) => {
@@ -196,6 +212,7 @@ function AdminPage() {
         {tab === 'alerts' && (
           <div>
             <h2 className="mb-4 text-lg font-semibold">Active Alerts</h2>
+            {alertError && <p className="mb-4 rounded-sm border border-demand/30 bg-demand/10 px-4 py-3 text-sm text-demand">{alertError}</p>}
             <div className="divide-y divide-border rounded-sm border border-border">
               {alerts.filter(a => !a.resolved_at).map((a) => (
                 <div key={a.id} className="flex items-start gap-4 p-4">
@@ -205,10 +222,12 @@ function AdminPage() {
                     <p className="label-mono mt-0.5">{a.type} · {new Date(a.created_at).toLocaleTimeString()}</p>
                   </div>
                   <button
+                    type="button"
+                    disabled={resolvingAlert === a.id}
                     onClick={() => resolveAlert(a.id)}
-                    className="text-[10px] border border-border px-2 py-1 rounded hover:bg-secondary"
+                    className="text-[10px] border border-border px-2 py-1 rounded hover:bg-secondary disabled:cursor-wait disabled:opacity-50"
                   >
-                    Resolve
+                    {resolvingAlert === a.id ? 'Resolving…' : 'Resolve'}
                   </button>
                 </div>
               ))}

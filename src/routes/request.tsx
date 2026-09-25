@@ -185,9 +185,9 @@ function RequestPage() {
               <div className="mt-6">
                 <h1 className="text-3xl font-semibold tracking-tight">How many people?</h1>
                 <div className="mt-8 flex items-center justify-between">
-                  <RoundButton label="Remove one person" onClick={() => setPeople((p) => Math.max(1, p - 1))}>−</RoundButton>
+                  <RoundButton disabled={people <= 1} label="Remove one person" onClick={() => setPeople((p) => Math.max(1, p - 1))}>−</RoundButton>
                   <span className="font-mono text-6xl text-signal">{people}</span>
-                  <RoundButton label="Add one person" onClick={() => setPeople((p) => Math.min(60, p + 1))}>+</RoundButton>
+                  <RoundButton disabled={people >= 10} label="Add one person" onClick={() => setPeople((p) => Math.min(10, p + 1))}>+</RoundButton>
                 </div>
               </div>
             )}
@@ -318,12 +318,14 @@ function RequestPage() {
   )
 }
 
-function RoundButton({ children, onClick, label }: { children: React.ReactNode; onClick: () => void; label: string }) {
+function RoundButton({ children, onClick, label, disabled = false }: { children: React.ReactNode; onClick: () => void; label: string; disabled?: boolean }) {
   return (
     <button
+      type="button"
+      disabled={disabled}
       aria-label={label}
       onClick={onClick}
-      className="flex size-12 items-center justify-center rounded-full border border-border text-xl transition-colors hover:bg-secondary"
+      className="flex size-12 items-center justify-center rounded-full border border-border text-xl transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-30"
     >
       {children}
     </button>

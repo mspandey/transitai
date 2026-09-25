@@ -22,6 +22,8 @@ function LoginPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [resending, setResending] = useState(false)
+  const [resent, setResent] = useState(false)
 
   // Restore draft after login
   useEffect(() => {
@@ -82,6 +84,24 @@ function LoginPage() {
           {error && (
             <p className="rounded-sm border border-demand/30 bg-demand/10 px-4 py-3 text-sm text-demand">
               {error}
+              {error.toLowerCase().includes('email not confirmed') && (
+                <button
+                  type="button"
+                  disabled={resending}
+                  onClick={async () => {
+                    setResending(true)
+                    setResent(false)
+                    const result = await supabase.auth.resend({ type: 'signup', email })
+                    setResending(false)
+                    if (result.error) setError(result.error.message)
+                    else setResent(true)
+                  }}
+                  className="mt-2 block text-signal underline disabled:opacity-50"
+                >
+                  {resending ? 'Sending…' : 'Resend confirmation email'}
+                </button>
+              )}
+              {resent && <span className="mt-2 block text-ok">Confirmation email sent.</span>}
             </p>
           )}
 
