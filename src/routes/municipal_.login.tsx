@@ -21,7 +21,7 @@ function MunicipalLoginPage() {
     event.preventDefault()
     setLoading(true)
     setError(null)
-    if (username !== 'username-municipal') {
+    if (username !== 'municipal') {
       setError('Invalid municipal credentials.')
       setLoading(false)
       return

@@ -6,10 +6,18 @@
       "title": "The scroll-driven hero animation is now working co",
       "titleSource": "firstUserMessage",
       "turnIds": [
-        "request_0d0d8aa0-0983-46b6-912e-e0774696ce9e"
+        "request_0d0d8aa0-0983-46b6-912e-e0774696ce9e",
+        "request_40340491-5c2b-4411-a1de-448761dce2bf",
+        "request_dd385e1e-bdf0-4eb7-9641-1654f4076b00",
+        "request_c835a690-8d72-41ef-9ae4-7e79412ccc8e",
+        "request_18fc8a2a-2a4a-47e5-a7de-1305934eeeb0",
+        "request_8f4e9c5c-14d8-4f66-b7ac-8708f222c861",
+        "request_3377bee0-70a9-447e-a8ff-094714766762",
+        "request_4312942d-aa03-4095-83cb-f7a32bd4add4",
+        "request_0f74d75c-d9b2-42de-8533-f5e9bca5779d"
       ],
       "firstSeen": "2026-09-25 04:26:50.182",
-      "lastSeen": "2026-09-25 04:31:06.234"
+      "lastSeen": "2026-09-25 09:13:12.803"
     }
   ]
 }
