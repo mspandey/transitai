@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { Logo } from '@/components/transit/chrome'
 import { getUserProfile, supabase } from '@/lib/supabase'
 
-export const Route = createFileRoute('/municipal/login')({
+export const Route = createFileRoute('/municipal_/login')({
   head: () => ({ meta: [{ title: 'Municipal Login — Transit AI' }] }),
   component: MunicipalLoginPage,
 })
@@ -37,9 +37,7 @@ function MunicipalLoginPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <header className="border-b border-border">
-        <div className="mx-auto flex h-14 w-full max-w-md items-center px-5"><Logo compact /></div>
-      </header>
+      <header className="border-b border-border"><div className="mx-auto flex h-14 w-full max-w-md items-center px-5"><Logo compact /></div></header>
       <main className="mx-auto flex w-full max-w-sm flex-1 flex-col px-5 py-12">
         <h1 className="text-3xl font-semibold tracking-tight">Municipal sign in</h1>
         <p className="mt-2 text-sm text-muted-foreground">Authorized municipal access only.</p>

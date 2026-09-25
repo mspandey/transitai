@@ -127,5 +127,11 @@ export function LeafletMap({
     };
   }, [buses, nearestStopId, onNearestStop, routes, stops, userLocation]);
 
+  useEffect(() => {
+    if (userLocation && mapRef.current) {
+      mapRef.current.setView([userLocation.lat, userLocation.lng], 14);
+    }
+  }, [userLocation]);
+
   return <div ref={containerRef} className="h-full min-h-[400px] w-full" />;
 }

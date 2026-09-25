@@ -8,10 +8,11 @@ type GeoState =
   | { status: 'unsupported' }
   | { status: 'error'; message: string }
 
-export function useGeolocation() {
+export function useGeolocation(enabled = true) {
   const [state, setState] = useState<GeoState>({ status: 'idle' })
 
   useEffect(() => {
+    if (!enabled) return
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
       setState({ status: 'unsupported' })
       return
@@ -37,7 +38,7 @@ export function useGeolocation() {
       },
       { timeout: 8000, maximumAge: 60000 },
     )
-  }, [])
+  }, [enabled])
 
   return state
 }

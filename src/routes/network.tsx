@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { Logo } from "@/components/transit/chrome";
 import { supabase } from "@/lib/supabase";
 import { LeafletMap, type LeafletStop } from "@/components/Map/LeafletMap";
+import { useGeolocation } from "@/hooks/useGeolocation";
+import { nearestStops } from "@/lib/geo/nearestStops";
 
 export const Route = createFileRoute("/network")({
   head: () => ({
@@ -23,6 +25,9 @@ function PublicNetwork() {
   const [fleet, setFleet] = useState<Bus[]>([]);
   const [routes, setRoutes] = useState<RouteData[]>([]);
   const [stops, setStops] = useState<LeafletStop[]>([]);
+  const [locating, setLocating] = useState(false);
+  const geo = useGeolocation(locating);
+  const nearest = geo.status === 'success' ? nearestStops(geo.lat, geo.lng, stops, 1, 1)[0] : null;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -79,6 +84,10 @@ function PublicNetwork() {
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">Live Network</h1>
           <p className="mt-2 text-sm text-muted-foreground">View current transit routes and active buses.</p>
+          <button type="button" onClick={() => setLocating(true)} disabled={locating} className="mt-4 rounded-sm border border-border px-3 py-2 text-sm hover:bg-secondary disabled:opacity-50">Find Nearest Bus Stand</button>
+          {geo.status === 'success' && nearest && <p className="mt-3 text-sm text-ok">Nearest bus stand: {nearest.name} · {(nearest.distanceKm * 1000).toFixed(0)} m away.</p>}
+          {geo.status === 'denied' && <p className="mt-3 text-sm text-demand">Location permission denied. You can still browse the network.</p>}
+          {geo.status === 'error' && <p className="mt-3 text-sm text-demand">Unable to determine your location. Try again from your browser settings.</p>}
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
@@ -89,6 +98,8 @@ function PublicNetwork() {
             </div>
             <LeafletMap
               stops={stops}
+              userLocation={geo.status === 'success' ? { lat: geo.lat, lng: geo.lng } : null}
+              nearestStopId={nearest?.id ?? null}
               buses={fleet.map((bus) => ({ id: bus.id, lat: bus.current_lat, lng: bus.current_lng, status: bus.current_route_id ? 'active' : 'idle' }))}
             />
           </div>
