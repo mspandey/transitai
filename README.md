@@ -280,8 +280,3 @@ Real transit data is messy. Rather than paper over it, the schema and logic expl
 
 Built by the Transit AI team for Amihacks 1.0.
 
----
-
-## License
-
-Add a license before making this repository public (MIT is a common default for hackathon projects: `npx license mit > LICENSE`).
