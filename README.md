@@ -21,7 +21,7 @@ Transit AI is a demand-intelligence and dynamic fleet allocation platform. Inste
 ## Table of Contents
 
 - [The Idea](#the-idea)
-- [See It In Action](#see-it-in-action)
+- [Dashboards & Access Levels](#dashboards--access-levels)
 - [Features](#features)
 - [Why It's Different](#why-its-different)
 - [Architecture](#architecture)
@@ -55,18 +55,65 @@ Citizens signal real demand. The platform clusters it into hotspots, predicts wh
 
 ---
 
-## See It In Action
+## Dashboards & Access Levels
 
+Transit AI isn't one screen — it's four, each scoped to who's using it. Click a row to expand.
 
-| | |
+<details>
+<summary><strong>🌐 Public — <code>/</code> and <code>/network</code></strong> — no login</summary>
+
+<br>
+
+The front door. `/` is the cinematic landing page and the "Request a Bus" flow anyone can use. `/network` is the **live public network view** — the same Leaflet + OpenStreetMap map the operators see, read-only: live buses, demand zones, and routes, updating in real time via Supabase Realtime. It's the "View Live Network" secondary CTA from the landing hero — proof the system is actually live, not a mockup.
+
+</details>
+
+<details>
+<summary><strong>🙋 Citizen — <code>/login</code>, <code>/signup</code></strong></summary>
+
+<br>
+
+Accounts are required only for the part that needs accountability: demand-responsive redirection requests (a group or high-priority pickup that actually diverts a bus). Signup enforces a real password policy (length + character mix), a confirm-password check, and a show/hide toggle on both fields — small things, but they're the difference between a form and a product.
+
+</details>
+
+<details>
+<summary><strong>🗺️ Municipal Control — <code>/municipal/login</code> → <code>/municipal</code></strong></summary>
+
+<br>
+
+Login-only — **no signup exists for this role**, on purpose. Predefined official credentials get you into:
+
+- A live bus list with ID, current delay, and route
+- A demand heatmap and telemetry alerts feed
+- A diversion review queue — **accept** or **reject** a recommended reallocation in one click
+- Click into any bus for its exact delay and its full official stop list, start to end
+
+Built to survive real use, not just a demo: concurrent edits by two officers are version-checked, so a conflicting action fails cleanly with "this was just updated — refresh" instead of one officer's change silently vanishing under another's.
+
+</details>
+
+<details>
+<summary><strong>🛠️ Developer Admin — <code>/admin/login</code> → <code>/admin</code></strong></summary>
+
+<br>
+
+Hackathon-scope, clearly labeled as such in the UI itself (`DEV ADMIN — HACKATHON ONLY`). Five tabs:
+
+| Tab | What it's for |
 |---|---|
-| **Cinematic landing hero** — scroll through the city → demand → fleet sequence |
-| **Requesting a bus** the full "where / where to / how many / when" flow |
-| **Explainable allocation** a recommendation card with its full reasoning breakdown |
-| **Municipal dashboard** live map, alerts feed, accept/reject a diversion |
-| **Finding your nearest stop** geolocation → nearest official stop on the Leaflet map |
+| **Fleet** | Every bus, its live status, and its current route |
+| **Zones** | Demand zones, thresholds, and predicted trend |
+| **Alerts** | Live `ID_CONFLICT`, `BREAKDOWN`, and other operational alerts, each with a **Resolve** action |
+| **Audit** | Every admin action, logged — nothing happens silently |
+| **Security** | System-wide toggles and access review |
+
+A one-click **`NETWORK →`** link jumps straight to the live map, and `SIGN OUT` is always one click away in the header.
+
+</details>
 
 ---
+
 ## Features
 
 ### 🚌 For citizens — no friction
@@ -86,14 +133,7 @@ Estimated arrival: 8 min · Route compatibility: 92%
 
 INPUT → REASONING → RECOMMENDATION, always inspectable, never a bare conclusion.
 
-### 🗺️ For municipal operators
-- Live fleet map (Leaflet + OpenStreetMap), demand heatmap, and an alerts feed
-- Accept or reject proposed diversions with one click
-- Conflict-safe: concurrent edits by two officers don't silently overwrite each other
-
-### 🛠️ For the team behind the scenes
-- A dev-only admin panel for fleet, zones, alerts, audit logs, and security
-- A transparent, tunable allocation-scoring formula instead of a hidden model
+For what municipal operators and the dev team get, see [Dashboards & Access Levels](#dashboards--access-levels) above.
 
 ---
 
@@ -171,8 +211,8 @@ Create a `.env.local` with:
 NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key   # server-only, never exposed to the client
-ADMIN_USERNAME= admin
-ADMIN_PASSWORD_HASH= admin123
+ADMIN_USERNAME=...
+ADMIN_PASSWORD_HASH=...
 ```
 
 Run the dev server:
