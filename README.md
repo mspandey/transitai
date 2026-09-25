@@ -61,16 +61,13 @@ Citizens signal real demand. The platform clusters it into hotspots, predicts wh
 
 | | |
 |---|---|
-| **Cinematic landing hero** | `![Hero scroll demo](docs/media/hero-scroll-demo.gif)` — scroll through the city → demand → fleet sequence |
-| **Requesting a bus** | `![Request flow demo](docs/media/request-flow-demo.gif)` — the full "where / where to / how many / when" flow |
-| **Explainable allocation** | `![Allocation card demo](docs/media/allocation-explainability-demo.gif)` — a recommendation card with its full reasoning breakdown |
-| **Municipal dashboard** | `![Municipal dashboard demo](docs/media/municipal-dashboard-demo.gif)` — live map, alerts feed, accept/reject a diversion |
-| **Finding your nearest stop** | `![Nearest stop demo](docs/media/nearest-stop-demo.gif)` — geolocation → nearest official stop on the Leaflet map |
-
-Keep clips under ~10 seconds and under a few MB each — GitHub renders GIFs inline in the README automatically once they're committed to the path above.
+| **Cinematic landing hero** — scroll through the city → demand → fleet sequence |
+| **Requesting a bus** the full "where / where to / how many / when" flow |
+| **Explainable allocation** a recommendation card with its full reasoning breakdown |
+| **Municipal dashboard** live map, alerts feed, accept/reject a diversion |
+| **Finding your nearest stop** geolocation → nearest official stop on the Leaflet map |
 
 ---
-
 ## Features
 
 ### 🚌 For citizens — no friction
