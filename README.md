@@ -276,7 +276,5 @@ Real transit data is messy. Rather than paper over it, the schema and logic expl
 
 ---
 
-## Team
 
-Built by the Transit AI team for Amihacks 1.0.
 
